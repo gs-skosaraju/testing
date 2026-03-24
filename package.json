@@ -4,7 +4,7 @@
   "description": "Test package for CISA KEV workflow validation - DELETE AFTER TESTING",
   "private": true,
   "dependencies": {
-    "lodash": "4.17.19",
+    "lodash": "4.17.23",
     "axios": "0.21.0",
     "minimist": "1.2.5"
   }
