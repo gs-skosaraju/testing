@@ -1,0 +1,11 @@
+{
+  "name": "security-kev-test",
+  "version": "1.0.0",
+  "description": "Test package for CISA KEV workflow validation - DELETE AFTER TESTING",
+  "private": true,
+  "dependencies": {
+    "lodash": "4.17.19",
+    "axios": "0.21.0",
+    "minimist": "1.2.5"
+  }
+}

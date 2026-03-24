@@ -1,0 +1,131 @@
+name: CISA KEV Vulnerability Check
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  kev-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download CISA KEV catalog
+        run: |
+          curl -sS https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json \
+            -o /tmp/kev.json
+          echo "KEV catalog downloaded. Total entries: $(jq '.vulnerabilities | length' /tmp/kev.json)"
+
+      - name: Extract KEV CVE IDs
+        run: |
+          jq -r '.vulnerabilities[].cveID' /tmp/kev.json | sort -u > /tmp/kev_cves.txt
+          echo "Total KEV CVEs: $(wc -l < /tmp/kev_cves.txt)"
+
+      - name: Fetch open Dependabot alerts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api /repos/${{ github.repository }}/dependabot/alerts?state=open --paginate \
+            > /tmp/dependabot_alerts.json
+          ALERT_COUNT=$(jq 'length' /tmp/dependabot_alerts.json)
+          echo "Total open Dependabot alerts: $ALERT_COUNT"
+          if [ "$ALERT_COUNT" -eq 0 ]; then
+            echo "NO_ALERTS=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Check for Dependabot alerts
+        if: env.NO_ALERTS == 'true'
+        run: |
+          echo "✅ No open Dependabot alerts found. Nothing to cross-reference with CISA KEV."
+          exit 0
+
+      - name: Extract Dependabot CVE IDs
+        if: env.NO_ALERTS != 'true'
+        run: |
+          jq -r '.[].security_advisory.cve_id | select(. != null)' /tmp/dependabot_alerts.json \
+            | sort -u > /tmp/dependabot_cves.txt
+          echo "Total unique Dependabot CVEs: $(wc -l < /tmp/dependabot_cves.txt)"
+
+      - name: Cross-reference with CISA KEV
+        if: env.NO_ALERTS != 'true'
+        run: |
+          comm -12 /tmp/kev_cves.txt /tmp/dependabot_cves.txt > /tmp/matched_cves.txt
+          TOTAL_DEP=$(wc -l < /tmp/dependabot_cves.txt)
+          MATCHED=$(wc -l < /tmp/matched_cves.txt)
+          NOT_MATCHED=$((TOTAL_DEP - MATCHED))
+          echo "TOTAL_DEP=$TOTAL_DEP" >> "$GITHUB_ENV"
+          echo "MATCHED=$MATCHED" >> "$GITHUB_ENV"
+          echo "NOT_MATCHED=$NOT_MATCHED" >> "$GITHUB_ENV"
+
+      - name: Generate CISA KEV report
+        if: env.NO_ALERTS != 'true'
+        run: |
+          DATE=$(date -u '+%Y-%m-%d %H:%M %Z')
+
+          echo "========================================="
+          echo "  CISA KEV Cross-Reference Report"
+          echo "  Repository: ${{ github.repository }}"
+          echo "  Date: $DATE UTC"
+          echo "========================================="
+          echo ""
+          echo "📊 Results Summary:"
+          echo "   Total open Dependabot CVEs : $TOTAL_DEP"
+          echo "   In CISA KEV (exploited)    : $MATCHED"
+          echo "   Not in CISA KEV            : $NOT_MATCHED"
+          echo ""
+
+          if [ "$MATCHED" -gt 0 ]; then
+            echo "🚨 CRITICAL: The following CVEs are ACTIVELY EXPLOITED (in CISA KEV):"
+            echo "-------------------------------------------"
+            while IFS= read -r CVE; do
+              INFO=$(jq -r --arg cve "$CVE" \
+                '.vulnerabilities[] | select(.cveID == $cve) | "\(.vulnerabilityName)\t\(.vendorProject)\t\(.product)\t\(.dueDate)"' \
+                /tmp/kev.json | head -1)
+              NAME=$(echo "$INFO" | cut -f1)
+              VENDOR=$(echo "$INFO" | cut -f2)
+              PRODUCT=$(echo "$INFO" | cut -f3)
+              DUE=$(echo "$INFO" | cut -f4)
+              echo "  ⚠️  $CVE"
+              echo "      Name    : $NAME"
+              echo "      Vendor  : $VENDOR"
+              echo "      Product : $PRODUCT"
+              echo "      Due Date: $DUE"
+              echo "-------------------------------------------"
+            done < /tmp/matched_cves.txt
+            echo "🔴 ACTION REQUIRED: Remediate these vulnerabilities immediately!"
+            echo ""
+            exit 1
+          else
+            echo "✅ No open Dependabot CVEs found in CISA KEV catalog."
+            echo "   None of your open alerts are currently actively exploited per CISA KEV."
+          fi
+
+      - name: List non-KEV alerts for reference
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ ! -f /tmp/dependabot_cves.txt ] || [ ! -f /tmp/matched_cves.txt ]; then
+            echo "ℹ️  No Dependabot CVE data available to list."
+            exit 0
+          fi
+
+          comm -23 /tmp/dependabot_cves.txt /tmp/kev_cves.txt > /tmp/non_kev_cves.txt
+          NON_KEV=$(wc -l < /tmp/non_kev_cves.txt)
+
+          if [ "$NON_KEV" -gt 0 ]; then
+            echo "ℹ️  Non-KEV open Dependabot CVEs (not actively exploited per CISA KEV):"
+            echo "-------------------------------------------"
+            while IFS= read -r CVE; do
+              echo "   • $CVE"
+            done < /tmp/non_kev_cves.txt
+            echo "-------------------------------------------"
+            echo "   Total: $NON_KEV CVE(s)"
+          else
+            echo "ℹ️  No non-KEV alerts to list."
+          fi
