@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   security-events: read
+  vulnerability-alerts: read
 
 jobs:
   kev-check:
