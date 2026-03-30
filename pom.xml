@@ -4,7 +4,7 @@
   <groupId>com.testing.security</groupId>
   <artifactId>kev-test</artifactId>
   <version>1.0.0</version>
-  <description>Test project for CISA KEV workflow validation - DELETE AFTER TESTING</description>
+  <description>Test project for CISA KEV workflow validation - DELETE AFTER TESTIN</description>
   <dependencies>
     <!-- Log4Shell - CVE-2021-44228 (CISA KEV) -->
     <dependency>
