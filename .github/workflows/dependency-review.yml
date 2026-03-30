@@ -18,7 +18,7 @@ jobs:
       - name: 'Dependency Review'
         uses: actions/dependency-review-action@v4
         with:
-          fail-on-severity: critical
+          fail-on-severity: high          # ← Changed from 'critical' to 'high'
           comment-summary-in-pr: always
           license-check: true
           vulnerability-check: true
