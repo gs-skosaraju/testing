@@ -27,13 +27,6 @@
       <version>5.3.17</version>
     </dependency>
 
-    <!-- Apache Commons Collections - CVE-2015-6420 (CISA KEV) -->
-    <dependency>
-      <groupId>commons-collections</groupId>
-      <artifactId>commons-collections</artifactId>
-      <version>3.2.1</version>
-    </dependency>
-
     <!-- Jackson Databind - CVE-2019-12384 (CISA KEV) -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
