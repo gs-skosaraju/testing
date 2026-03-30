@@ -4,7 +4,7 @@
   <groupId>com.testing.security</groupId>
   <artifactId>kev-test</artifactId>
   <version>1.0.0</version>
-  <description>Test project for Dependency Review validation</description>
+  <description>Test project for Dependency Review validations - v2</description>
   <dependencies>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
