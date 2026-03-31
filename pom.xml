@@ -4,12 +4,34 @@
   <groupId>com.testing.security</groupId>
   <artifactId>kev-test</artifactId>
   <version>1.0.0</version>
-  <description>Test project for CISA KEV workflow validation - DELETE AFTER TESTING</description>
+  <description>Test project for Dependency Review validation</description>
   <dependencies>
+    <!-- Existing on main: Log4Shell - CVE-2021-44228 (CISA KEV) -->
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
       <version>2.14.1</version>
+    </dependency>
+
+    <!-- NEW: Text4Shell - CVE-2022-42889 (CISA KEV) - Critical RCE -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-text</artifactId>
+      <version>1.9</version>
+    </dependency>
+
+    <!-- NEW: Jackson Databind - CVE-2019-12384 (CISA KEV) - Deserialization RCE -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.8</version>
+    </dependency>
+
+    <!-- NEW: Apache Struts - CVE-2017-5638 (CISA KEV) - Critical RCE -->
+    <dependency>
+      <groupId>org.apache.struts</groupId>
+      <artifactId>struts2-core</artifactId>
+      <version>2.5.16</version>
     </dependency>
   </dependencies>
 </project>
